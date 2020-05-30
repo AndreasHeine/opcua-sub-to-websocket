@@ -1,8 +1,5 @@
-from opcua import Client
-from opcua import ua, common
-import asyncio
-import websockets
-import json
+from opcua import Client, ua
+import asyncio, websockets, json
 
 loop = asyncio.get_event_loop()
 

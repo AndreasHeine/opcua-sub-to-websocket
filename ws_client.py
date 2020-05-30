@@ -1,8 +1,4 @@
-'''
-Client:
-'''
-import asyncio
-import websockets
+import asyncio, websockets
 
 async def request():
     uri = "ws://127.0.0.1:8000"
