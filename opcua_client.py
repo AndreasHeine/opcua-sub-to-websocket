@@ -87,7 +87,7 @@ async def main(client, subscription, nodes_to_subscribe, handler):
         if case == 1:
             #connect
             try:
-                await connect(client)
+                await connect(client=client)
                 case = 2
             except:
                 case = 1
@@ -95,7 +95,7 @@ async def main(client, subscription, nodes_to_subscribe, handler):
         elif case == 2:
             #subscribe
             try:
-                sub_handle_list = await subscribe(client, subscription, nodes_to_subscribe, handler)
+                sub_handle_list = await subscribe(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, handler=handler)
                 case = 3
             except:
                 case = 4
@@ -103,14 +103,14 @@ async def main(client, subscription, nodes_to_subscribe, handler):
         elif case == 3:
             #running
             try:
-                case = await get_service_level(client, case)
+                case = await get_service_level(client=client, case=case)
                 await asyncio.sleep(2)
             except:
                 case = 4
         elif case == 4:
             #disconnect clean+
             try:
-                await disconnect(client, subscription, sub_handle_list)
+                await disconnect(client=client, subscription=subscription, sub_handle_list=sub_handle_list)
             except:
                 await asyncio.sleep(0)
             case = 0
@@ -118,7 +118,7 @@ async def main(client, subscription, nodes_to_subscribe, handler):
             case = 1
             await asyncio.sleep(5)
 
-async def response(websocket, path):
+async def ws_handler(websocket, path):
     while 1:
         await asyncio.sleep(0)
         if handler.node:
@@ -129,8 +129,8 @@ async def response(websocket, path):
                 }))
             handler.node = None
 
-start_server = websockets.serve(ws_handler=response, host="127.0.0.1", port=8000)
+start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
 asyncio.ensure_future(start_server, loop=loop)
-asyncio.ensure_future(main(client, subscription, nodes_to_subscribe, handler), loop=loop)
+asyncio.ensure_future(main(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, handler=handler), loop=loop)
 loop.run_forever()
