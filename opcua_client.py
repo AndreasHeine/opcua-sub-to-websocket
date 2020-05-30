@@ -72,7 +72,7 @@ async def unsubscribe(client, subscription, sub_handle_list):
     for handle in sub_handle_list:
         subscription.unsubscribe(handle)
 
-async def get_service_level(client, case):
+async def get_service_level(client):
     service_level = client.get_node("ns=0;i=2267").get_value()
     #print("Servicelevel", service_level)
     if service_level >= 200:
@@ -103,12 +103,12 @@ async def main(client, subscription, nodes_to_subscribe, handler):
         elif case == 3:
             #running
             try:
-                case = await get_service_level(client=client, case=case)
+                case = await get_service_level(client=client)
                 await asyncio.sleep(2)
             except:
                 case = 4
         elif case == 4:
-            #disconnect clean+
+            #disconnect clean
             try:
                 await disconnect(client=client, subscription=subscription, sub_handle_list=sub_handle_list)
             except:
