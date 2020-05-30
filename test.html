@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andreas Heine</title>
+</head>
+<body>
+<div id="content"> Nothing </div>
+<script>
+    function connect() {
+      let url = "ws://127.0.0.1:8000";
+      let s = new WebSocket(url);
+      s.onopen = function(event) {
+        console.log(event);
+      }
+      s.onclose = function(event) {
+        console.log(event);
+        setTimeout(function() {
+          connect();
+        }, 2000);
+      }
+      s.onerror = function(event) {
+        console.log(event);
+      }
+      s.onmessage = function(event){
+        data = JSON.parse(event.data);
+        console.log(data);
+        document.getElementById("content").innerHTML = data.value;
+      }
+    }
+    connect();
+</script>
+</body>
+</html>
