@@ -18,7 +18,7 @@ class SubHandler(object):
         self.val = None
         self.data = None
         self.event = None
-        self.status = None
+        # self.status = None
 
     def datachange_notification(self, node, val, data):
         """
@@ -27,25 +27,29 @@ class SubHandler(object):
         self.node = node
         self.val = val
         self.data = data
-        print(val)
+        print(node, val, data)
     
     def event_notification(self, event):
         """
         called for every event notification from server
         """
         self.event = event
+        print(event)
 
-    def status_change_notification(self, status):
-        """
-        called for every status change notification from server
-        """
-        self.status = status
+    # def status_change_notification(self, status):
+    #     """
+    #     called for every status change notification from server
+    #     """
+    #     self.status = status
+    #     print(status)
+
 
 url = "opc.tcp://127.0.0.1:4840"
 client = Client(url)
 handler = SubHandler()
 subscription = None
-nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"]
+nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"] #node-id
+events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
 
 async def connect(client):
     print("Connecting...")
@@ -58,12 +62,15 @@ async def disconnect(client, subscription, sub_handle_list):
     client.disconnect()
     print(f"Disconnected!")
 
-async def subscribe(client, subscription, nodes_to_subscribe, handler):
-    print("Subscribe all nodes!")
+async def subscribe(client, subscription, nodes_to_subscribe, events_to_subscribe, handler):
+    print("Subscribe nodes and events!")
     subscription = client.create_subscription(500, handler)
     sub_handle_list = []
     for node in nodes_to_subscribe:
         handle = subscription.subscribe_data_change(client.get_node(node))
+        sub_handle_list.append(handle)
+    for event in events_to_subscribe:
+        handle = subscription.subscribe_events(event[0], event[1])
         sub_handle_list.append(handle)
     return sub_handle_list
 
@@ -80,7 +87,7 @@ async def get_service_level(client):
     else:
         return 4
 
-async def main(client, subscription, nodes_to_subscribe, handler):
+async def main(client, subscription, nodes_to_subscribe, events_to_subscribe, handler):
     case = 0
     sub_handle_list = []
     while 1:
@@ -95,7 +102,7 @@ async def main(client, subscription, nodes_to_subscribe, handler):
         elif case == 2:
             #subscribe
             try:
-                sub_handle_list = await subscribe(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, handler=handler)
+                sub_handle_list = await subscribe(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, events_to_subscribe=events_to_subscribe, handler=handler)
                 case = 3
             except:
                 case = 4
@@ -123,14 +130,30 @@ async def ws_handler(websocket, path):
         await asyncio.sleep(0)
         if handler.node:
             await websocket.send(json.dumps({
+                "type": "datachange",
                 "id": str(handler.node.nodeid), 
                 "browsname": str(handler.node.get_browse_name()), 
                 "value": str(handler.val)
                 }))
             handler.node = None
+            handler.val = None
+            handler.data = None
+        if handler.event:
+            await websocket.send(json.dumps({
+                "type": "event",
+                "event": str(handler.event)
+                }))
+            handler.event = None
+        # if handler.status:
+        #     await websocket.send(json.dumps({
+        #         "type": "status",
+        #         "status": str(handler.status)
+        #         }))
+        #     handler.event = None
+
 
 start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
 asyncio.ensure_future(start_server, loop=loop)
-asyncio.ensure_future(main(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, handler=handler), loop=loop)
+asyncio.ensure_future(main(client=client, subscription=subscription, nodes_to_subscribe=nodes_to_subscribe, events_to_subscribe=events_to_subscribe, handler=handler), loop=loop)
 loop.run_forever()
