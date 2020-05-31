@@ -66,18 +66,21 @@ async def subscribe(client, subscription, nodes_to_subscribe, events_to_subscrib
     print("Subscribe nodes and events!")
     subscription = client.create_subscription(500, handler)
     sub_handle_list = []
-    for node in nodes_to_subscribe:
-        handle = subscription.subscribe_data_change(client.get_node(node))
-        sub_handle_list.append(handle)
-    for event in events_to_subscribe:
-        handle = subscription.subscribe_events(event[0], event[1])
-        sub_handle_list.append(handle)
+    if nodes_to_subscribe:
+        for node in nodes_to_subscribe:
+            handle = subscription.subscribe_data_change(client.get_node(node))
+            sub_handle_list.append(handle)
+    if events_to_subscribe:
+        for event in events_to_subscribe:
+            handle = subscription.subscribe_events(event[0], event[1])
+            sub_handle_list.append(handle)
     return sub_handle_list
 
 async def unsubscribe(client, subscription, sub_handle_list):
     print("Unsubscribe all nodes!")
-    for handle in sub_handle_list:
-        subscription.unsubscribe(handle)
+    if sub_handle_list:
+        for handle in sub_handle_list:
+            subscription.unsubscribe(handle)
 
 async def get_service_level(client):
     service_level = client.get_node("ns=0;i=2267").get_value()
