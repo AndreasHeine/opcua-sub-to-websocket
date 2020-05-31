@@ -18,7 +18,6 @@ class SubHandler(object):
         self.val = None
         self.data = None
         self.event = None
-        # self.status = None
 
     def datachange_notification(self, node, val, data):
         """
@@ -35,14 +34,6 @@ class SubHandler(object):
         """
         self.event = event
         print(event)
-
-    # def status_change_notification(self, status):
-    #     """
-    #     called for every status change notification from server
-    #     """
-    #     self.status = status
-    #     print(status)
-
 
 url = "opc.tcp://127.0.0.1:4840"
 client = Client(url)
@@ -147,13 +138,6 @@ async def ws_handler(websocket, path):
                 "event": str(handler.event)
                 }))
             handler.event = None
-        # if handler.status:
-        #     await websocket.send(json.dumps({
-        #         "type": "status",
-        #         "status": str(handler.status)
-        #         }))
-        #     handler.event = None
-
 
 start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
