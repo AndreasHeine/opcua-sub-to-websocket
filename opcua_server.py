@@ -3,7 +3,7 @@ import asyncio, random, time
 
 server = Server()
 server.set_endpoint("opc.tcp://127.0.0.1:4840")
-server.set_server_name("OPCUA-Test")
+server.set_server_name("http://andreas-heine.net/UA")
 address_space = server.register_namespace("testnamespace")
 
 root_node = server.get_root_node()
