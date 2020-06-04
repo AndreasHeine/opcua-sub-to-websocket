@@ -2,6 +2,12 @@
 Work in progress do not use!
 Work in progress do not use!
 Work in progress do not use!
+
+TO DO:
+-register clients on connect
+-if no one is connectet to ws then queue = empty
+-maybe implement max queuesize
+-refactor and beautifying work
 '''
 
 import asyncio, websockets, json
