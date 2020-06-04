@@ -7,6 +7,9 @@ Work in progress do not use!
 import asyncio, websockets, json
 from asyncua import Client, ua, Node
 from asyncua.common.events import Event
+
+datachange_notification_queue = []
+event_notification_queue = []
  
 class SubscriptionHandler:
     """
@@ -17,18 +20,20 @@ class SubscriptionHandler:
         Callback for asyncua Subscription.
         This method will be called when the Client received a data change message from the Server.
         """
-        print('datachange_notification %r %s', node, val)
+        datachange_notification_queue.append((node, val, data))
+        print(node, val)
 
     def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
-        print('event_notification %r', event)
+        event_notification_queue.append(event)
+        print(event)
 
 
 async def main():
-    uri = "opc.tcp://127.0.0.1:4840"
-    client = Client(url=uri)
+    url = "opc.tcp://127.0.0.1:4840"
+    client = Client(url=url)
     handler = SubscriptionHandler()
     nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"] #node-id
     events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
@@ -51,7 +56,7 @@ async def main():
             #subscribe all nodes and events
             print("subscribing nodes and events...")
             try:
-                subscription = await client.create_subscription(500, handler)
+                subscription = await client.create_subscription(50, handler)
                 sub_handle_list = []
                 if nodes_to_subscribe:
                     for node in nodes_to_subscribe:
@@ -72,6 +77,8 @@ async def main():
             try:
                 service_level = await client.get_node("ns=0;i=2267").get_value()
                 print(service_level)
+                print("datachange_notification_queue ", datachange_notification_queue)
+                print("event_notification_queue ", event_notification_queue)
                 if service_level >= 200:
                     case = 3
                 else:
@@ -93,7 +100,7 @@ async def main():
                 print("disconnection error!")
                 subscription = None
                 sub_handle_list = []
-                client = Client(url=uri)
+                client = Client(url=url)
                 await asyncio.sleep(0)
             case = 0
         else:
@@ -101,6 +108,28 @@ async def main():
             case = 1
             await asyncio.sleep(5)
 
+async def ws_handler(websocket, path):
+    while 1:
+        await asyncio.sleep(0)
+        if datachange_notification_queue:
+            for datachange in datachange_notification_queue:
+                await websocket.send(json.dumps({
+                    "type": "datachange",
+                    "datachange": str(datachange)
+                    }))
+                datachange_notification_queue.pop(0)
+
+        if event_notification_queue:
+            for event in event_notification_queue:
+                await websocket.send(json.dumps({
+                    "type": "event",
+                    "event": str(event), 
+                    }))
+                event_notification_queue.pop(0)
+
+start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.ensure_future(main())
+    asyncio.ensure_future(start_server)
+    asyncio.get_event_loop().run_forever()

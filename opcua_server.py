@@ -1,5 +1,6 @@
 from opcua import ua, Server
 import asyncio, random, time
+from datetime import datetime
 
 server = Server()
 server.set_endpoint("opc.tcp://127.0.0.1:4840")
@@ -27,19 +28,21 @@ async def servicelevel_updater(servicelevel_node):
 
 async def random_updater(random_node):
     while True:
-        await asyncio.sleep(random.randint(1,10))
+        await asyncio.sleep(random.randint(1,100)/1000)
         random_node.set_value(ua.DataValue(ua.Variant(random.randint(70,90), ua.VariantType.UInt64)))
+        print("datachange", datetime.now())
 
 async def event_gen(myevgen):
         count = 0
         while 1:
-            await asyncio.sleep(random.randint(1,10))
+            await asyncio.sleep(random.randint(1,10)/100)
             myevgen.event.Message = ua.LocalizedText("MyFirstEvent %d" % count)
             myevgen.event.Severity = count
             myevgen.event.MyNumericProperty = count
             myevgen.event.MyStringProperty = "Property " + str(count)
             myevgen.trigger()
             count += 1
+            print("event", datetime.now())
       
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(servicelevel_updater(server.get_node("ns=0;i=2267")))
