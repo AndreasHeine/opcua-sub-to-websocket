@@ -125,7 +125,7 @@ async def ws_handler(websocket, path):
         if handler.node:
             await websocket.send(json.dumps({
                 "type": "datachange",
-                "id": str(handler.node.nodeid), 
+                "id": str(handler.node), 
                 "browsname": str(handler.node.get_browse_name()), 
                 "value": str(handler.val)
                 }))
