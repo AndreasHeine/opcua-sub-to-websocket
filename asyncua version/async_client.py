@@ -27,14 +27,14 @@ class SubscriptionHandler:
         This method will be called when the Client received a data change message from the Server.
         """
         datachange_notification_queue.append((node, val, data))
-        print(node, val)
+        # print(node, val)
 
     def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
         event_notification_queue.append(event)
-        print(event)
+        # print(event)
 
 
 async def main():
@@ -114,24 +114,49 @@ async def main():
             case = 1
             await asyncio.sleep(5)
 
-async def ws_handler(websocket, path):
-    while 1:
-        await asyncio.sleep(0)
-        if datachange_notification_queue:
-            for datachange in datachange_notification_queue:
-                await websocket.send(json.dumps({
-                    "type": "datachange",
-                    "datachange": str(datachange)
-                    }))
-                datachange_notification_queue.pop(0)
+users = set()
+user_id = 0
 
-        if event_notification_queue:
-            for event in event_notification_queue:
-                await websocket.send(json.dumps({
-                    "type": "event",
-                    "event": str(event), 
-                    }))
-                event_notification_queue.pop(0)
+async def register(websocket):
+    global user_id
+    users.add(websocket)
+    user_id += 1
+    # print("USER_ID; ",user_id)
+    await websocket.send(json.dumps({
+        "registerd": True,
+        "id": user_id
+    }))
+    # print(users)
+
+async def unregister(websocket):
+    users.remove(websocket)
+    await websocket.send(json.dumps({
+        "registerd": False,
+    }))
+    # print(users)
+
+async def ws_handler(websocket, path):
+    await register(websocket)
+    try:
+        while 1:
+            await asyncio.sleep(0)
+            if datachange_notification_queue:
+                for datachange in datachange_notification_queue:
+                    await websocket.send(json.dumps({
+                        "type": "datachange",
+                        "datachange": str(datachange)
+                        }))
+                    datachange_notification_queue.pop(0)
+
+            if event_notification_queue:
+                for event in event_notification_queue:
+                    await websocket.send(json.dumps({
+                        "type": "event",
+                        "event": str(event), 
+                        }))
+                    event_notification_queue.pop(0)
+    finally:
+        await unregister(websocket)
 
 start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
