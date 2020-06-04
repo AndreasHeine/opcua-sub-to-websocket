@@ -1,11 +1,7 @@
 '''
 Work in progress do not use!
-Work in progress do not use!
-Work in progress do not use!
 
 TO DO:
--register clients on connect
--if no one is connectet to ws then queue = empty
 -maybe implement max queuesize
 -refactor and beautifying work
 '''
@@ -81,6 +77,9 @@ async def main():
         elif case == 3:
             #running => read cyclic the service level if it fails disconnect and unsubscribe => wait 5s => connect
             try:
+                if users == set():
+                    datachange_notification_queue.clear()
+                    event_notification_queue.clear()
                 service_level = await client.get_node("ns=0;i=2267").get_value()
                 print(service_level)
                 print("datachange_notification_queue ", datachange_notification_queue)
@@ -155,6 +154,7 @@ async def ws_handler(websocket, path):
                         "event": str(event), 
                         }))
                     event_notification_queue.pop(0)
+
     finally:
         await unregister(websocket)
 
