@@ -37,7 +37,7 @@ also provided is a test HTML Page "test.html" with some basic JavaScript to conn
     <title>Andreas Heine</title>
 </head>
 <body>
-<div id="content"> Data is logged into Console ! </div>
+<div id="content"> Data is logged to the console ! </div>
 <script>
     var content = "";
     function connect() {
