@@ -6,7 +6,7 @@
     <title>Andreas Heine</title>
 </head>
 <body>
-<div id="content"> Nothing </div>
+<div id="content"> Data is logged into Console ! </div>
 <script>
     var content = "";
     function connect() {
@@ -25,10 +25,9 @@
         console.log(event);
       }
       s.onmessage = function(event){
-        //data = JSON.parse(event.data);
         console.log(event.data);
-        content = event.data + "<br>" + content;
-        document.getElementById("content").innerHTML = content;
+        //content = event.data + "<br>" + content;
+        //document.getElementById("content").innerHTML = content;
       }
     }
     connect();

@@ -37,7 +37,7 @@ also provided is a test HTML Page "test.html" with some basic JavaScript to conn
     <title>Andreas Heine</title>
 </head>
 <body>
-<div id="content"> Nothing </div>
+<div id="content"> Data is logged into Console ! </div>
 <script>
     var content = "";
     function connect() {
@@ -56,10 +56,9 @@ also provided is a test HTML Page "test.html" with some basic JavaScript to conn
         console.log(event);
       }
       s.onmessage = function(event){
-        //data = JSON.parse(event.data);
         console.log(event.data);
-        content = event.data + "<br>" + content;
-        document.getElementById("content").innerHTML = content;
+        //content = event.data + "<br>" + content;
+        //document.getElementById("content").innerHTML = content;
       }
     }
     connect();

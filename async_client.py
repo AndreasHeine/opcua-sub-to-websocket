@@ -5,7 +5,7 @@ TO DO:
 -performance enhancements
 '''
 
-import asyncio, websockets, json
+import asyncio, websockets, json, datetime
 from asyncua import Client, ua, Node
 from asyncua.common.events import Event
 
@@ -22,14 +22,12 @@ class SubscriptionHandler:
         This method will be called when the Client received a data change message from the Server.
         """
         datachange_notification_queue.append((node, val, data))
-        # print(node, val)
 
     def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
         event_notification_queue.append(event)
-        # print(event)
 
 
 async def main():
@@ -150,6 +148,7 @@ async def notifier():
                 for datachange in datachange_notification_queue:
                     message = json.dumps({
                         "type": "datachange",
+                        "timestamp": str(datetime.now()),
                         "datachange": str(datachange)
                         })
                     await asyncio.wait([user.send(message) for user in users])
@@ -159,7 +158,8 @@ async def notifier():
                 for event in event_notification_queue:
                     message = json.dumps({
                         "type": "event",
-                        "event": str(event), 
+                        "timestamp": str(datetime.now()),
+                        "event": str(event)
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     event_notification_queue.pop(0)
