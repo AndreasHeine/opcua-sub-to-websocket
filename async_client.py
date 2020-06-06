@@ -82,7 +82,7 @@ async def main():
                 print(service_level)
                 print("datachange_notification_queue ", datachange_notification_queue)
                 print("event_notification_queue ", event_notification_queue)
-                print(users)
+                print("connected_clients", users)
                 if service_level >= 200:
                     case = 3
                 else:
