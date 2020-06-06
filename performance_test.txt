@@ -1,0 +1,10 @@
+Example:
+
+Server-Event at 13:48:11.485364
+Client received it and send out it at 13:48:11.503316
+
++ 0.017952s (Processing time for async_client.py with two ws_client.py instances on localhost, this will grow depending on you network and the number of connected clients)
+
+Websocket-Client reseived it at 13:48:11.503316
+
++ 0.0 (this will grow depending on you network if you dont use localhost)
