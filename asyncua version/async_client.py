@@ -1,10 +1,8 @@
 '''
-Work in progress do not use!
-
 TO DO:
--multi usersupport: right now i am fixing user unregister after connection lost
 -maybe implement max queuesize
 -refactor and beautifying work
+-performance enhancements
 '''
 
 import asyncio, websockets, json
@@ -130,15 +128,18 @@ async def register(websocket):
 
 async def unregister(websocket):
     users.remove(websocket)
-    # await websocket.send(json.dumps({
-    #     "registerd": False,
-    # }))
+    await websocket.send(json.dumps({
+        "registerd": False,
+    }))
 
 async def ws_handler(websocket, path):
     await register(websocket)
-    while 1:
-        await asyncio.sleep(0.01)
-    await unregister(websocket)
+    try:
+        while 1:
+            await websocket.send(json.dumps({"type": "keep-alive"}))
+            await asyncio.sleep(2)
+    finally:
+        await unregister(websocket)
 
 start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
