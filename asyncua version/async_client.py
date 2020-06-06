@@ -2,6 +2,7 @@
 Work in progress do not use!
 
 TO DO:
+-multi usersupport: right now i am fixing user unregister after connection lost
 -maybe implement max queuesize
 -refactor and beautifying work
 '''
@@ -41,7 +42,7 @@ async def main():
     events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
     subscription = None
     case = 0
-    sub_handle_list = []
+    subscription_handle_list = []
     while 1:
         if case == 1:
             #connect
@@ -59,15 +60,15 @@ async def main():
             print("subscribing nodes and events...")
             try:
                 subscription = await client.create_subscription(50, handler)
-                sub_handle_list = []
+                subscription_handle_list = []
                 if nodes_to_subscribe:
                     for node in nodes_to_subscribe:
                         handle = await subscription.subscribe_data_change(client.get_node(node))
-                        sub_handle_list.append(handle)
+                        subscription_handle_list.append(handle)
                 if events_to_subscribe:
                     for event in events_to_subscribe:
                         handle = await subscription.subscribe_events(event[0], event[1])
-                        sub_handle_list.append(handle)
+                        subscription_handle_list.append(handle)
                 print("subscribed!")
                 case = 3
             except:
@@ -84,6 +85,7 @@ async def main():
                 print(service_level)
                 print("datachange_notification_queue ", datachange_notification_queue)
                 print("event_notification_queue ", event_notification_queue)
+                print(users)
                 if service_level >= 200:
                     case = 3
                 else:
@@ -95,8 +97,8 @@ async def main():
             #disconnect clean = unsubscribe, delete subscription then disconnect
             print("disconnecting...")
             try:
-                if sub_handle_list:
-                    for handle in sub_handle_list:
+                if subscription_handle_list:
+                    for handle in subscription_handle_list:
                         await subscription.unsubscribe(handle)
                 await subscription.delete()
                 await client.disconnect()
@@ -104,7 +106,7 @@ async def main():
             except:
                 print("disconnection error!")
                 subscription = None
-                sub_handle_list = []
+                subscription_handle_list = []
                 client = Client(url=url)
                 await asyncio.sleep(0)
             case = 0
@@ -125,42 +127,45 @@ async def register(websocket):
         "registerd": True,
         "id": user_id
     }))
-    # print(users)
 
 async def unregister(websocket):
     users.remove(websocket)
-    await websocket.send(json.dumps({
-        "registerd": False,
-    }))
-    # print(users)
+    # await websocket.send(json.dumps({
+    #     "registerd": False,
+    # }))
 
 async def ws_handler(websocket, path):
     await register(websocket)
-    try:
-        while 1:
-            await asyncio.sleep(0)
+    while 1:
+        await asyncio.sleep(0.01)
+    await unregister(websocket)
+
+start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
+
+async def notifier():
+    while 1:
+        if users:  # asyncio.wait doesn't accept an empty list
             if datachange_notification_queue:
                 for datachange in datachange_notification_queue:
-                    await websocket.send(json.dumps({
+                    message = json.dumps({
                         "type": "datachange",
                         "datachange": str(datachange)
-                        }))
+                        })
+                    await asyncio.wait([user.send(message) for user in users])
                     datachange_notification_queue.pop(0)
 
             if event_notification_queue:
                 for event in event_notification_queue:
-                    await websocket.send(json.dumps({
+                    message = json.dumps({
                         "type": "event",
                         "event": str(event), 
-                        }))
+                        })
+                    await asyncio.wait([user.send(message) for user in users])
                     event_notification_queue.pop(0)
-
-    finally:
-        await unregister(websocket)
-
-start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
+        await asyncio.sleep(0)
 
 if __name__ == "__main__":
     asyncio.ensure_future(main())
+    asyncio.ensure_future(notifier())
     asyncio.ensure_future(start_server)
     asyncio.get_event_loop().run_forever()
