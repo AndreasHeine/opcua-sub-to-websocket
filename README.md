@@ -27,7 +27,7 @@ async def event_gen(myevgen):
             print(datetime.now(), "event")
 ```
 
-also provided is a test HTML Page "test.html" with some basic JavaScript to connect/reconnect to a Websockets:   
+also provided is a test HTML Page "test.html" with some basic JavaScript to connect/reconnect to Websockets:   
 ```
 <!DOCTYPE html>
 <html lang="de">
@@ -81,6 +81,7 @@ async def request():
 
 asyncio.get_event_loop().run_until_complete(request())
 ```
+  
   
   
 Interested? Contact me: info@andreas-heine.net
