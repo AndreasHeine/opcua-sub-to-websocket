@@ -136,7 +136,7 @@ async def ws_handler(websocket, path):
     try:
         while 1:
             await websocket.send(json.dumps({"type": "keep-alive"}))
-            await asyncio.sleep(2)
+            await asyncio.sleep(10)
     finally:
         await unregister(websocket)
 

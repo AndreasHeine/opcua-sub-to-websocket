@@ -1,11 +1,11 @@
 # opcua-sub-to-websocket  
 ### OPC UA Server -> OPC UA Client / Websocket Server -> Websocket Client   
   
-You can use this to Push Data from a OPC UA Subscription over a Websocket to the Browser/Websocket-Client  
+You can use this to push data from a "OPC UA Subscription" over a websocket to the browser/websocket-client  
   
-The OPC UA Subscription Gateway "async_client.py" can support multiple Websocket-Clients and pushes all received Subscription notifications to all Websocket-Clients.
+The "OPC UA Subscription Gateway" can support multiple websocket-clients and pushes all received subscription-notifications to all websocket-clients.
   
-Provided is a Sample OPC UA Server which generates random Events and Datachanges  
+Provided is a sample "OPC UA Server" which generates random events and datachanges!  
 The timing can be ajusted in opcua_server.py:
 ```
 async def random_updater(random_node):
@@ -27,7 +27,7 @@ async def event_gen(myevgen):
             print(datetime.now(), "event")
 ```
 
-also provided is a test HTML Page "test.html" with some basic JavaScript to connect/reconnect to Websockets:   
+also provided is a test HTML-Page with some basic JavaScript to connect/reconnect to websockets:   
 ```
 <!DOCTYPE html>
 <html lang="de">
@@ -67,7 +67,7 @@ also provided is a test HTML Page "test.html" with some basic JavaScript to conn
 </html>
 ```
   
-aswell as an Python based Websocket-Client "ws_client.py":  
+aswell as an python based websocket-client :  
   
 ```
 import asyncio, websockets
