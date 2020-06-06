@@ -8,3 +8,18 @@ Client received it and send out it at 13:48:11.503316
 Websocket-Client reseived it at 13:48:11.503316
 
 + 0.0 (this will grow depending on you network if you dont use localhost)
+
+Result:
+-no dataloss
+-really small delay
+-websocket-clients receiving same data
+
+Setup:
+    opcua_server.py: cmd
+    async_client.py: VS Code run in debug
+    ws_client.py: both cmd
+
+PC:
+    Win10
+    Intel Core i7-9750H
+    16GB Ram
