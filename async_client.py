@@ -5,9 +5,10 @@ TO DO:
 -performance enhancements
 '''
 
-import asyncio, websockets, json, datetime
+import asyncio, websockets, json
 from asyncua import Client, ua, Node
 from asyncua.common.events import Event
+from datetime import datetime
 
 datachange_notification_queue = []
 event_notification_queue = []
