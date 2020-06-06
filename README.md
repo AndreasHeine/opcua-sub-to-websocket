@@ -3,7 +3,7 @@
   
 You can use this to push data from a "OPC UA Subscription" over a websocket to the browser/websocket-client  
   
-The "OPC UA Subscription Gateway" can support multiple websocket-clients and pushes all received subscription-notifications to all websocket-clients.
+"opcua-sub-to-websocket" can support multiple websocket-clients and pushes all received subscription-notifications to all websocket-clients.
   
 Provided is a sample "OPC UA Server" which generates random events and datachanges!  
 The timing can be ajusted in opcua_server.py:
