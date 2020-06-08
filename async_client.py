@@ -19,14 +19,16 @@ server_url = "opc.tcp://127.0.0.1:4840"
 datachange_notification_queue = []
 event_notification_queue = []
 status_change_notification_queue = []
-nodes_to_subscribe =    [  
+nodes_to_subscribe =    [
+                        #node-id
                         "ns=2;i=2", 
                         "ns=0;i=2267", 
                         "ns=0;i=2259",
-                        ] #node-id
+                        ]
 events_to_subscribe =   [
+                        #(eventtype-node-id, event-node-id)
                         ("ns=2;i=1", "ns=2;i=3")
-                        ] #(eventtype-node-id, event-node-id)
+                        ]
 
 # WebSocketServer:
 ws_ip = "127.0.0.1"
@@ -71,7 +73,6 @@ async def opcua_client():
     """
     client = Client(url=server_url)
     handler = SubscriptionHandler()
-
     subscription = None
     case = 0
     subscription_handle_list = []
