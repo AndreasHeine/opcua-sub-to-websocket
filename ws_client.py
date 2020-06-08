@@ -1,4 +1,4 @@
-import asyncio, websockets
+import asyncio, websockets, json
 from datetime import datetime
 
 async def request():
@@ -6,6 +6,13 @@ async def request():
     async with websockets.connect(uri) as websocket:
         while 1:
             msg = await websocket.recv()
-            print(datetime.now(), msg)
+            data = json.loads(msg)
+            try:
+                if data["type"] == "keep-alive":
+                    pass
+                else:
+                    print("ws_recv", datetime.now(), msg)
+            except:
+                pass
 
 asyncio.get_event_loop().run_until_complete(request())

@@ -22,20 +22,26 @@ class SubscriptionHandler:
         Callback for asyncua Subscription.
         This method will be called when the Client received a data change message from the Server.
         """
-        datachange_notification_queue.append((node, val, data))
+        datachange_notification_queue.append((node, val))
 
     def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
-        event_notification_queue.append(event)
+        event_dict = event.get_event_props_as_fields_dict()
+        event_notification_queue.append((event_dict["Time"]))
 
 
 async def main():
+    """
+    Mainprogram:
+    -Handles connect/disconnect/reconnect/subscribe/unsubscribe
+    -Connection monitoring with cyclic read of the service-level
+    """
     url = "opc.tcp://127.0.0.1:4840"
     client = Client(url=url)
     handler = SubscriptionHandler()
-    nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"] #node-id
+    nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259", "ns=0;i=2259"] #node-id
     events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
     subscription = None
     case = 0
@@ -92,20 +98,23 @@ async def main():
                 case = 4
         elif case == 4:
             #disconnect clean = unsubscribe, delete subscription then disconnect
-            print("disconnecting...")
+            print("unsubscribing...")
             try:
                 if subscription_handle_list:
                     for handle in subscription_handle_list:
                         await subscription.unsubscribe(handle)
                 await subscription.delete()
-                await client.disconnect()
-                print("disconnected!")
+                print("unsubscribed!")
             except:
-                print("disconnection error!")
+                print("unsubscribing error!")
                 subscription = None
                 subscription_handle_list = []
-                client = Client(url=url)
                 await asyncio.sleep(0)
+            print("disconnecting...")
+            try:
+                await client.disconnect()
+            except:
+                print("disconnection error!")
             case = 0
         else:
             #wait
@@ -116,6 +125,9 @@ users = set()
 user_id = 0
 
 async def register(websocket):
+    """
+    registers the websocket and return a message with an user id and registerd = True
+    """
     global user_id
     users.add(websocket)
     user_id += 1
@@ -126,12 +138,18 @@ async def register(websocket):
     }))
 
 async def unregister(websocket):
+    """
+    unregisters the websocket and return a message with registerd = False
+    """
     users.remove(websocket)
     await websocket.send(json.dumps({
         "registerd": False,
     }))
 
 async def ws_handler(websocket, path):
+    """
+    ws_handler handles all incoming websocket connections and send a keep-alive to the client
+    """
     await register(websocket)
     try:
         while 1:
@@ -143,14 +161,17 @@ async def ws_handler(websocket, path):
 start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
 
 async def notifier():
+    """
+    if at leat one user has been registered, the 'notifier' will send all registered clients the queued messages
+    """
     while 1:
         if users:  # asyncio.wait doesn't accept an empty list
             if datachange_notification_queue:
                 for datachange in datachange_notification_queue:
                     message = json.dumps({
+                        "ws_send": str(datetime.now()),
                         "type": "datachange",
-                        "timestamp": str(datetime.now()),
-                        "datachange": str(datachange)
+                        #"datachange": str(datachange)
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     datachange_notification_queue.pop(0)
@@ -158,9 +179,9 @@ async def notifier():
             if event_notification_queue:
                 for event in event_notification_queue:
                     message = json.dumps({
+                        "ws_send": str(datetime.now()),
                         "type": "event",
-                        "timestamp": str(datetime.now()),
-                        "event": str(event)
+                        #"event": str(event)
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     event_notification_queue.pop(0)
