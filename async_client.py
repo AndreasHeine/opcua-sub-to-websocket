@@ -1,7 +1,8 @@
-'''
+"""
 TO DO:
 -performance enhancements
-'''
+
+"""
 
 import asyncio, websockets, json
 from asyncua import Client, ua, Node
@@ -176,7 +177,7 @@ start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=80
 
 async def notifier():
     """
-    if at leat one user has been registered, the 'notifier' will send all registered clients the queued messages
+    if at leat one user has been registered, the notifier will send all registered clients the queued messages
     """
     while 1:
         if users:
