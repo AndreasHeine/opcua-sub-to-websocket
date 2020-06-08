@@ -29,6 +29,16 @@ async def event_gen(myevgen):
 
 also provided is a test HTML-Page with some basic JavaScript to connect/reconnect to WebSockets:   
 ```
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andreas Heine</title>
+</head>
+<body>
+<div id="content"> Data is logged to the console ! </div>
+<script>
     var content = {}
     let data
     function connect() {
@@ -65,6 +75,9 @@ also provided is a test HTML-Page with some basic JavaScript to connect/reconnec
       }
     }
     connect();
+</script>
+</body>
+</html>
 ```
   
 aswell as an python based WebSocket Client :  
