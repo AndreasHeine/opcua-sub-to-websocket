@@ -12,6 +12,7 @@ from datetime import datetime
 
 datachange_notification_queue = []
 event_notification_queue = []
+status_change_notification_queue = []
  
 class SubscriptionHandler:
     """
@@ -30,18 +31,23 @@ class SubscriptionHandler:
         """
         event_dict = event.get_event_props_as_fields_dict()
         event_notification_queue.append((event_dict["Time"]))
+    
+    def status_change_notification(self, status):
+        """
+        called for every status change notification from server
+        """
+        status_change_notification_queue.append(status)
 
 
 async def main():
     """
-    Mainprogram:
-    -Handles connect/disconnect/reconnect/subscribe/unsubscribe
-    -Connection monitoring with cyclic read of the service-level
+    -handles connect/disconnect/reconnect/subscribe/unsubscribe
+    -connection-monitoring with cyclic read of the service-level
     """
     url = "opc.tcp://127.0.0.1:4840"
     client = Client(url=url)
     handler = SubscriptionHandler()
-    nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259", "ns=0;i=2259"] #node-id
+    nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"] #node-id
     events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
     subscription = None
     case = 0
@@ -52,6 +58,7 @@ async def main():
             print("connecting...")
             try:
                 await client.connect()
+                await client.load_type_definitions()
                 print("connected!")
                 case = 2
             except:
@@ -72,6 +79,7 @@ async def main():
                     for event in events_to_subscribe:
                         handle = await subscription.subscribe_events(event[0], event[1])
                         subscription_handle_list.append(handle)
+                await subscription.subscribe_events()
                 print("subscribed!")
                 case = 3
             except:
@@ -85,10 +93,6 @@ async def main():
                     datachange_notification_queue.clear()
                     event_notification_queue.clear()
                 service_level = await client.get_node("ns=0;i=2267").get_value()
-                print(service_level)
-                print("datachange_notification_queue ", datachange_notification_queue)
-                print("event_notification_queue ", event_notification_queue)
-                print("connected_clients", users)
                 if service_level >= 200:
                     case = 3
                 else:
@@ -131,7 +135,6 @@ async def register(websocket):
     global user_id
     users.add(websocket)
     user_id += 1
-    # print("USER_ID; ",user_id)
     await websocket.send(json.dumps({
         "registerd": True,
         "id": user_id
@@ -165,13 +168,12 @@ async def notifier():
     if at leat one user has been registered, the 'notifier' will send all registered clients the queued messages
     """
     while 1:
-        if users:  # asyncio.wait doesn't accept an empty list
+        if users:
             if datachange_notification_queue:
                 for datachange in datachange_notification_queue:
                     message = json.dumps({
                         "ws_send": str(datetime.now()),
                         "type": "datachange",
-                        #"datachange": str(datachange)
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     datachange_notification_queue.pop(0)
@@ -181,10 +183,18 @@ async def notifier():
                     message = json.dumps({
                         "ws_send": str(datetime.now()),
                         "type": "event",
-                        #"event": str(event)
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     event_notification_queue.pop(0)
+
+            if status_change_notification_queue:
+                for status in status_change_notification_queue:
+                    message = json.dumps({
+                        "ws_send": str(datetime.now()),
+                        "type": "status",
+                        })
+                    await asyncio.wait([user.send(message) for user in users])
+                    status_change_notification_queue.pop(0)
         await asyncio.sleep(0)
 
 if __name__ == "__main__":

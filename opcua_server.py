@@ -43,11 +43,20 @@ async def event_gen(myevgen):
             myevgen.trigger()
             count += 1
             print(datetime.now(), "event")
+
+async def status_updater(status_node):
+    while True:
+        status_node.set_value(ua.DataValue(ua.Variant(ua.ServerState.Running, ua.VariantType.Int32)))
+        await asyncio.sleep(10)
+        status_node.set_value(ua.DataValue(ua.Variant(ua.ServerState.Suspended, ua.VariantType.Int32)))
+        await asyncio.sleep(10)
+        
       
 loop = asyncio.get_event_loop()
 asyncio.ensure_future(servicelevel_updater(server.get_node("ns=0;i=2267")))
 asyncio.ensure_future(random_updater(random_node))
 asyncio.ensure_future(event_gen(myevgen))
+asyncio.ensure_future(status_updater(server.get_node("ns=0;i=2259")))
 
 if __name__ == "__main__":
     try:
