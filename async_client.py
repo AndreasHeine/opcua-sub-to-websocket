@@ -1,7 +1,5 @@
 '''
 TO DO:
--maybe implement max queuesize
--refactor and beautifying work
 -performance enhancements
 '''
 
@@ -10,10 +8,22 @@ from asyncua import Client, ua, Node
 from asyncua.common.events import Event
 from datetime import datetime
 
+
+####################################################################################
+# Globals:
+####################################################################################
+
 datachange_notification_queue = []
 event_notification_queue = []
 status_change_notification_queue = []
- 
+users = set()
+user_id = 0
+
+
+####################################################################################
+# OpcUaClient:
+####################################################################################
+
 class SubscriptionHandler:
     """
     The SubscriptionHandler is used to handle the data that is received for the subscription.
@@ -39,7 +49,7 @@ class SubscriptionHandler:
         status_change_notification_queue.append(status)
 
 
-async def main():
+async def opcua_client():
     """
     -handles connect/disconnect/reconnect/subscribe/unsubscribe
     -connection-monitoring with cyclic read of the service-level
@@ -79,7 +89,6 @@ async def main():
                     for event in events_to_subscribe:
                         handle = await subscription.subscribe_events(event[0], event[1])
                         subscription_handle_list.append(handle)
-                await subscription.subscribe_events()
                 print("subscribed!")
                 case = 3
             except:
@@ -125,8 +134,10 @@ async def main():
             case = 1
             await asyncio.sleep(5)
 
-users = set()
-user_id = 0
+
+####################################################################################
+# Websocketserver:
+####################################################################################
 
 async def register(websocket):
     """
@@ -197,8 +208,13 @@ async def notifier():
                     status_change_notification_queue.pop(0)
         await asyncio.sleep(0)
 
+
+####################################################################################
+# Run:
+####################################################################################
+
 if __name__ == "__main__":
-    asyncio.ensure_future(main())
+    asyncio.ensure_future(opcua_client())
     asyncio.ensure_future(notifier())
     asyncio.ensure_future(start_server)
     asyncio.get_event_loop().run_forever()
