@@ -23,7 +23,7 @@ nodes_to_subscribe =    [
                         #node-id
                         "ns=2;i=2", 
                         "ns=0;i=2267", 
-                        "ns=0;i=2259",
+                        "ns=0;i=2259",                       
                         ]
 events_to_subscribe =   [
                         #(eventtype-node-id, event-node-id)
@@ -76,6 +76,7 @@ async def opcua_client():
     subscription = None
     case = 0
     subscription_handle_list = []
+    idx = 0
     while 1:
         if case == 1:
             #connect
@@ -83,6 +84,7 @@ async def opcua_client():
             try:
                 await client.connect()
                 await client.load_type_definitions()
+                idx = await client.get_namespace_index("http://andreas-heine.net/UA")
                 print("connected!")
                 case = 2
             except:
@@ -93,10 +95,12 @@ async def opcua_client():
             #subscribe all nodes and events
             print("subscribing nodes and events...")
             try:
+                variable_list = await client.get_node("ns=2;i=6").get_children() # added for performance test with 100 quick and randomly changing variables
                 subscription = await client.create_subscription(50, handler)
                 subscription_handle_list = []
                 if nodes_to_subscribe:
-                    for node in nodes_to_subscribe:
+                    for node in nodes_to_subscribe + variable_list: # added for performance test with 100 quick and randomly changing variables
+                    # for node in nodes_to_subscribe:
                         handle = await subscription.subscribe_data_change(client.get_node(node))
                         subscription_handle_list.append(handle)
                 if events_to_subscribe:
@@ -193,40 +197,43 @@ async def notifier():
     if at leat one user has been registered, the notifier will send all registered clients the queued messages
     """
     while 1:
-        if users:
-            if datachange_notification_queue:
-                for datachange in datachange_notification_queue:
-                    message = json.dumps({
-                        "ws_send": str(datetime.now()),
-                        "topic": "datachange notification",
-                        "payload": {
-                                    "node": str(datachange[0]),
-                                    "value": str(datachange[1]),
-                                    "data": str(datachange[2]),
-                                    },
-                        })
-                    await asyncio.wait([user.send(message) for user in users])
-                    datachange_notification_queue.pop(0)
+        try:
+            if users:
+                if datachange_notification_queue:
+                    for datachange in datachange_notification_queue:
+                        message = json.dumps({
+                            "ws_send": str(datetime.now()),
+                            "topic": "datachange notification",
+                            "payload": {
+                                        "node": str(datachange[0]),
+                                        "value": str(datachange[1]),
+                                        "data": str(datachange[2]),
+                                        },
+                            })
+                        await asyncio.wait([user.send(message) for user in users])
+                        datachange_notification_queue.pop(0)
 
-            if event_notification_queue:
-                for event in event_notification_queue:
-                    message = json.dumps({
-                        "ws_send": str(datetime.now()),
-                        "topic": "event notification",
-                        "payload": str(event),
-                        })
-                    await asyncio.wait([user.send(message) for user in users])
-                    event_notification_queue.pop(0)
+                if event_notification_queue:
+                    for event in event_notification_queue:
+                        message = json.dumps({
+                            "ws_send": str(datetime.now()),
+                            "topic": "event notification",
+                            "payload": str(event),
+                            })
+                        await asyncio.wait([user.send(message) for user in users])
+                        event_notification_queue.pop(0)
 
-            if status_change_notification_queue:
-                for status in status_change_notification_queue:
-                    message = json.dumps({
-                        "ws_send": str(datetime.now()),
-                        "topic": "status change notification",
-                        "payload": str(status),
-                        })
-                    await asyncio.wait([user.send(message) for user in users])
-                    status_change_notification_queue.pop(0)
+                if status_change_notification_queue:
+                    for status in status_change_notification_queue:
+                        message = json.dumps({
+                            "ws_send": str(datetime.now()),
+                            "topic": "status change notification",
+                            "payload": str(status),
+                            })
+                        await asyncio.wait([user.send(message) for user in users])
+                        status_change_notification_queue.pop(0)
+        except:
+            pass
         await asyncio.sleep(0)
 
 

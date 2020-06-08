@@ -17,6 +17,13 @@ random_node = parameter_obj.add_variable(address_space, "random", ua.Variant(0, 
 etype = server.create_custom_event_type(address_space, 'MyFirstEvent', ua.ObjectIds.BaseEventType, [('MyNumericProperty', ua.VariantType.Float), ('MyStringProperty', ua.VariantType.String)])
 myevgen = server.get_event_generator(etype, parameter_obj)
 
+vars_obj = object_node.add_object(address_space, "Vars")
+var_list = []
+for i in range(100):
+    var = vars_obj.add_variable(ua.NodeId.from_string(f'ns={address_space};s=DB_DATA.Test.var{i}'), f'Test.var{i}', 0)
+    var.set_writable(True)
+    var_list.append(var)
+
 async def servicelevel_updater(servicelevel_node):
     value = 0
     while True:
@@ -28,14 +35,14 @@ async def servicelevel_updater(servicelevel_node):
 
 async def random_updater(random_node):
     while True:
-        await asyncio.sleep(random.randint(1,10)/10) #<-------------
+        await asyncio.sleep(random.randint(1,100)/10) #<-------------
         random_node.set_value(ua.DataValue(ua.Variant(random.randint(70,90), ua.VariantType.UInt64)))
         print(datetime.now(), "datachange")
 
 async def event_gen(myevgen):
         count = 0
         while 1:
-            await asyncio.sleep(random.randint(1,10)/10) #<-------------
+            await asyncio.sleep(random.randint(1,100)/10) #<-------------
             myevgen.event.Message = ua.LocalizedText("MyFirstEvent %d" % count)
             myevgen.event.Severity = count
             myevgen.event.MyNumericProperty = count
@@ -43,6 +50,12 @@ async def event_gen(myevgen):
             myevgen.trigger()
             count += 1
             print(datetime.now(), "event")
+
+async def vars_updater(var_list):
+        while 1:
+            for each in var_list:
+                each.set_value(random.randint(1,100))
+            await asyncio.sleep(random.randint(1,100)/10)
 
 async def status_updater(status_node):
     while True:
@@ -57,6 +70,7 @@ asyncio.ensure_future(servicelevel_updater(server.get_node("ns=0;i=2267")))
 asyncio.ensure_future(random_updater(random_node))
 asyncio.ensure_future(event_gen(myevgen))
 asyncio.ensure_future(status_updater(server.get_node("ns=0;i=2259")))
+asyncio.ensure_future(vars_updater(var_list))
 
 if __name__ == "__main__":
     try:
