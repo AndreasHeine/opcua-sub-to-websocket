@@ -7,12 +7,6 @@ async def request():
         while 1:
             msg = await websocket.recv()
             data = json.loads(msg)
-            try:
-                if data["type"] == "keep-alive":
-                    pass
-                else:
-                    print("ws_recv", datetime.now(), msg)
-            except:
-                pass
-
+            print(data)
+            
 asyncio.get_event_loop().run_until_complete(request())

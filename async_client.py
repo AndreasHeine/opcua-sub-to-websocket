@@ -14,9 +14,23 @@ from datetime import datetime
 # Globals:
 ####################################################################################
 
+# OPC UA Client
+server_url = "opc.tcp://127.0.0.1:4840"
 datachange_notification_queue = []
 event_notification_queue = []
 status_change_notification_queue = []
+nodes_to_subscribe =    [  
+                        "ns=2;i=2", 
+                        "ns=0;i=2267", 
+                        "ns=0;i=2259",
+                        ] #node-id
+events_to_subscribe =   [
+                        ("ns=2;i=1", "ns=2;i=3")
+                        ] #(eventtype-node-id, event-node-id)
+
+# WebSocketServer:
+ws_ip = "127.0.0.1"
+ws_port = 8000
 users = set()
 user_id = 0
 
@@ -34,14 +48,14 @@ class SubscriptionHandler:
         Callback for asyncua Subscription.
         This method will be called when the Client received a data change message from the Server.
         """
-        datachange_notification_queue.append((node, val))
+        datachange_notification_queue.append((node, val, data))
 
     def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
         event_dict = event.get_event_props_as_fields_dict()
-        event_notification_queue.append((event_dict["Time"]))
+        event_notification_queue.append(event_dict)
     
     def status_change_notification(self, status):
         """
@@ -55,11 +69,9 @@ async def opcua_client():
     -handles connect/disconnect/reconnect/subscribe/unsubscribe
     -connection-monitoring with cyclic read of the service-level
     """
-    url = "opc.tcp://127.0.0.1:4840"
-    client = Client(url=url)
+    client = Client(url=server_url)
     handler = SubscriptionHandler()
-    nodes_to_subscribe = ["ns=2;i=2", "ns=0;i=2267", "ns=0;i=2259"] #node-id
-    events_to_subscribe = [("ns=2;i=1", "ns=2;i=3")] #(eventtype-node-id, event-node-id)
+
     subscription = None
     case = 0
     subscription_handle_list = []
@@ -173,7 +185,7 @@ async def ws_handler(websocket, path):
     finally:
         await unregister(websocket)
 
-start_server = websockets.serve(ws_handler=ws_handler, host="127.0.0.1", port=8000)
+start_server = websockets.serve(ws_handler=ws_handler, host=ws_ip, port=ws_port)
 
 async def notifier():
     """
@@ -185,7 +197,12 @@ async def notifier():
                 for datachange in datachange_notification_queue:
                     message = json.dumps({
                         "ws_send": str(datetime.now()),
-                        "type": "datachange",
+                        "topic": "datachange notification",
+                        "payload": {
+                                    "node": str(datachange[0]),
+                                    "value": str(datachange[1]),
+                                    "data": str(datachange[2]),
+                                    },
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     datachange_notification_queue.pop(0)
@@ -194,7 +211,8 @@ async def notifier():
                 for event in event_notification_queue:
                     message = json.dumps({
                         "ws_send": str(datetime.now()),
-                        "type": "event",
+                        "topic": "event notification",
+                        "payload": str(event),
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     event_notification_queue.pop(0)
@@ -203,7 +221,8 @@ async def notifier():
                 for status in status_change_notification_queue:
                     message = json.dumps({
                         "ws_send": str(datetime.now()),
-                        "type": "status",
+                        "topic": "status change notification",
+                        "payload": str(status),
                         })
                     await asyncio.wait([user.send(message) for user in users])
                     status_change_notification_queue.pop(0)
