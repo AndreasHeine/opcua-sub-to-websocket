@@ -42,7 +42,7 @@ async def random_updater(random_node):
 async def event_gen(myevgen):
         count = 0
         while 1:
-            await asyncio.sleep(random.randint(1,100)/10) #<-------------
+            await asyncio.sleep(random.randint(1,100)/100) #<-------------
             myevgen.event.Message = ua.LocalizedText("MyFirstEvent %d" % count)
             myevgen.event.Severity = count
             myevgen.event.MyNumericProperty = count
@@ -55,6 +55,7 @@ async def vars_updater(var_list):
         while 1:
             for each in var_list:
                 each.set_value(random.randint(1,100))
+            print(datetime.now(), "bulk datachange")
             await asyncio.sleep(random.randint(1,100)/10)
 
 async def status_updater(status_node):
