@@ -5,6 +5,14 @@ You can use this to push data from a "OPC UA Subscription" over a WebSocket to t
   
 "opcua-sub-to-websocket" can support multiple WebSocket-Clients and pushes all received subscription-notifications to all WebSocket-Clients.
   
+Startup on Localhost:  
+```
+Console1: python opcua_server.py  
+Console2: python async_client.py  
+Console3: python ws_client.py  
+And as many Browser instances of test.html as you want!  
+```  
+  
 Provided is a sample "OPC UA Server" which generates random events and datachanges!  
 The timing can be adjusted in opcua_server.py:
 ```
