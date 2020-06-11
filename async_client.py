@@ -56,8 +56,7 @@ class SubscriptionHandler:
         """
         called for every event notification from server
         """
-        event_dict = event.get_event_props_as_fields_dict()
-        event_notification_queue.append(event_dict)
+        event_notification_queue.append(event.get_event_props_as_fields_dict())
     
     def status_change_notification(self, status):
         """
