@@ -1,9 +1,3 @@
-"""
-TO DO:
--performance enhancements
-
-"""
-
 import asyncio, websockets, json
 from asyncua import Client, ua, Node
 from asyncua.common.events import Event
