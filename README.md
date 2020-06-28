@@ -15,7 +15,7 @@ And as many Browser instances of test.html as you want!
   
 Provided is a sample "OPC UA Server" which generates random events and datachanges!  
 The timing can be adjusted in opcua_server.py:
-```
+```python
 async def random_updater(random_node):
     while True:
         await asyncio.sleep(random.randint(1,10)/10) #<-------------
@@ -36,7 +36,7 @@ async def event_gen(myevgen):
 ```
 
 also provided is a test HTML-Page with some basic JavaScript to connect/reconnect to WebSockets:   
-```
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -90,7 +90,7 @@ also provided is a test HTML-Page with some basic JavaScript to connect/reconnec
   
 aswell as an python based WebSocket Client :  
   
-```
+```python
 import asyncio, websockets
 
 async def request():
