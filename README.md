@@ -14,7 +14,7 @@ And as many Browser instances of test.html as you want!
 ```  
   
 Provided is a sample "OPC UA Server" which generates random events and datachanges!  
-The timing can be adjusted in opcua_server.py:
+The timing can be adjusted in server.py:
 ```python
 async def random_updater(random_node):
     while True:
@@ -45,7 +45,7 @@ also provided is a test HTML-Page with some basic JavaScript to connect/reconnec
     <title>Andreas Heine</title>
 </head>
 <body>
-<div id="content"> Data is logged to the console ! </div>
+<div id="content"> </div>
 <script>
     var content = {}
     let data
