@@ -7,8 +7,8 @@ You can use this to push data from a "OPC UA Subscription" over a WebSocket to t
   
 Startup on Localhost:  
 ```
-Console1: python opcua_server.py  
-Console2: python async_client.py  
+Console1: python server.py  
+Console2: python client.py  
 Console3: python ws_client.py  
 And as many Browser instances of test.html as you want!  
 ```  
