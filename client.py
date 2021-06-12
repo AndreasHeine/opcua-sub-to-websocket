@@ -1,4 +1,6 @@
-import asyncio, websockets, json
+import asyncio
+import websockets
+import json
 from asyncua import Client, ua, Node
 from asyncua.common.events import Event
 from datetime import datetime
@@ -10,9 +12,10 @@ from datetime import datetime
 
 # OPC UA Client
 server_url = "opc.tcp://127.0.0.1:4840"
+datachange_notification_queue_lock = asyncio.Lock()
 datachange_notification_queue = []
+event_notification_queue_lock  = asyncio.Lock()
 event_notification_queue = []
-status_change_notification_queue = []
 nodes_to_subscribe =    [
                         #node-id
                         "ns=2;i=2", 
@@ -39,24 +42,20 @@ class SubscriptionHandler:
     """
     The SubscriptionHandler is used to handle the data that is received for the subscription.
     """
-    def datachange_notification(self, node: Node, val, data):
+    async def datachange_notification(self, node: Node, val, data):
         """
         Callback for asyncua Subscription.
         This method will be called when the Client received a data change message from the Server.
         """
-        datachange_notification_queue.append((node, val, data))
+        async with datachange_notification_queue_lock:
+            datachange_notification_queue.append((node, val, data))
 
-    def event_notification(self, event: Event):
+    async def event_notification(self, event: Event):
         """
         called for every event notification from server
         """
-        event_notification_queue.append(event.get_event_props_as_fields_dict())
-    
-    def status_change_notification(self, status):
-        """
-        called for every status change notification from server
-        """
-        status_change_notification_queue.append(status)
+        async with event_notification_queue_lock:
+            event_notification_queue.append(event.get_event_props_as_fields_dict())
 
 
 async def opcua_client():
@@ -76,24 +75,20 @@ async def opcua_client():
             print("connecting...")
             try:
                 await client.connect()
-                await client.load_type_definitions()
-                idx = await client.get_namespace_index("http://andreas-heine.net/UA")
                 print("connected!")
                 case = 2
             except:
                 print("connection error!")
                 case = 1
-                await asyncio.sleep(5)
+                await asyncio.sleep(2)
         elif case == 2:
             #subscribe all nodes and events
             print("subscribing nodes and events...")
             try:
-                variable_list = await client.get_node("ns=2;i=6").get_children() # added for performance test with 100 quick and randomly changing variables
-                subscription = await client.create_subscription(50, handler)
+                subscription = await client.create_subscription(200, handler)
                 subscription_handle_list = []
                 if nodes_to_subscribe:
-                    for node in nodes_to_subscribe + variable_list: # added for performance test with 100 quick and randomly changing variables
-                    # for node in nodes_to_subscribe:
+                    for node in nodes_to_subscribe:
                         handle = await subscription.subscribe_data_change(client.get_node(node))
                         subscription_handle_list.append(handle)
                 if events_to_subscribe:
@@ -117,7 +112,7 @@ async def opcua_client():
                     case = 3
                 else:
                     case = 4
-                await asyncio.sleep(5)
+                await asyncio.sleep(2)
             except:
                 case = 4
         elif case == 4:
@@ -143,7 +138,7 @@ async def opcua_client():
         else:
             #wait
             case = 1
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
 
 
 ####################################################################################
@@ -167,9 +162,12 @@ async def unregister(websocket):
     unregisters the websocket and return a message with registerd = False
     """
     users.remove(websocket)
-    await websocket.send(json.dumps({
-        "registerd": False,
-    }))
+    try:
+        await websocket.send(json.dumps({
+            "registerd": False,
+        }))
+    except:
+        pass
 
 async def ws_handler(websocket, path):
     """
@@ -192,39 +190,32 @@ async def notifier():
     while 1:
         try:
             if users:
-                if datachange_notification_queue:
-                    for datachange in datachange_notification_queue:
-                        message = json.dumps({
-                            "ws_send": str(datetime.now()),
-                            "topic": "datachange notification",
-                            "payload": {
-                                        "node": str(datachange[0]),
-                                        "value": str(datachange[1]),
-                                        "data": str(datachange[2]),
-                                        },
-                            })
-                        await asyncio.wait([user.send(message) for user in users])
-                        datachange_notification_queue.pop(0)
+                async with datachange_notification_queue_lock:
+                    if datachange_notification_queue:
+                        for datachange in datachange_notification_queue:
+                            message = json.dumps({
+                                "ws_send": str(datetime.now()),
+                                "topic": "datachange notification",
+                                "payload": {
+                                            "node": str(datachange[0]),
+                                            "value": str(datachange[1]),
+                                            "data": str(datachange[2]),
+                                            },
+                                })
+                            await asyncio.wait([user.send(message) for user in users])
+                            datachange_notification_queue.pop(0)
 
-                if event_notification_queue:
-                    for event in event_notification_queue:
-                        message = json.dumps({
-                            "ws_send": str(datetime.now()),
-                            "topic": "event notification",
-                            "payload": str(event),
-                            })
-                        await asyncio.wait([user.send(message) for user in users])
-                        event_notification_queue.pop(0)
+                async with event_notification_queue_lock:
+                    if event_notification_queue:
+                        for event in event_notification_queue:
+                            message = json.dumps({
+                                "ws_send": str(datetime.now()),
+                                "topic": "event notification",
+                                "payload": str(event),
+                                })
+                            await asyncio.wait([user.send(message) for user in users])
+                            event_notification_queue.pop(0)
 
-                if status_change_notification_queue:
-                    for status in status_change_notification_queue:
-                        message = json.dumps({
-                            "ws_send": str(datetime.now()),
-                            "topic": "status change notification",
-                            "payload": str(status),
-                            })
-                        await asyncio.wait([user.send(message) for user in users])
-                        status_change_notification_queue.pop(0)
         except:
             pass
         await asyncio.sleep(0)
